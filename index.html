@@ -179,51 +179,55 @@ function model3d(r0,b,g){
   return {P,W,H,D,nMod};
 }
 function explodeSVG(r,b,g,nums){
-  const M=model3d(r,b,g), k=.5, c=Math.cos(Math.PI/6), s=Math.sin(Math.PI/6);
-  // ποιο κομμάτι της λίστας κοπής είναι (ομάδα + όνομα), για τον αριθμό
-  let ki=0,mi=0; const gOf=[]; for(const ch of r.lay){ if(ch==='K'){ki++;gOf[mi]='KASA-B'+Math.round(b.kw/10)+(b.k1?'-1F'+kHg(r,ki,b.nK):'')+'_'+ki} else gOf[mi]='NT-'+Math.round(b.ntW/10)+(ch==='D'?'':r.hg); mi++ }
+  // Ανάπτυξη ανά προϊόν (κάσα, NT, καταφραγές): κάθε προϊόν σε δικό του πλαίσιο, πόρτες/πλάτες δίπλα,
+  // αριθμοί σε μία στήλη δεξιά του πλαισίου, ένας για κάθε γραμμή της λίστας κοπής (χρήστης 2026-10-16)
+  const M=model3d(r,b,g), k=.45, c=Math.cos(Math.PI/6), s=Math.sin(Math.PI/6);
+  let ki=0,mi=0; const gOf=[], tOf=[]; for(const ch of r.lay){ if(ch==='K'){ki++;gOf[mi]='KASA-B'+Math.round(b.kw/10)+(b.k1?'-1F'+kHg(r,ki,b.nK):'')+'_'+ki;tOf[mi]='Κάσα '+ki+' · '+b.kw} else {gOf[mi]='NT-'+Math.round(b.ntW/10)+(ch==='D'?'':r.hg);tOf[mi]='NT '+b.ntW+(ch==='D'?' δίφυλλη':' '+r.hg)} mi++ }
   const FN={'Κ| αριστερά':'K|','Κ| δεξιά':'K|','Πλαϊνό αριστερά':'PLAINO AR','Πλαϊνό δεξιά':'PLAINO DX','MPAZA':'MPAZA','K-OR':'K-OR'};
-  const used={}, bkx={};
-  const pts=M.P.filter(p=>p.kind!=='leg'&&p.kind!=='metal').map(p=>{
-    let grp=p.grp==='ΚΑΤΑΦΡΑΓΕΣ'?'KATAFRAGES':gOf[p.mod], name=p.name;
-    if(p.name==='EXTRA KAPAKI') grp='EXTRA'; else if(p.name.startsWith('Έξτρα Κ|')) name='K|'; else if(FN[p.name]) name=FN[p.name];
-    const key=grp+'|'+name; const cand=nums.filter(n=>n.key===key); const n=cand.length?cand[Math.min(cand.length-1,(used[key]=(used[key]||0)+1)-1)].n:'';
-    const d=p.dir, mid=(M.nMod-1)/2, sp=(p.mod-mid)*520;
-    // πόρτες και πλάτες σε δική τους σειρά κάτω από τον σκελετό, για να μην κρύβουν τα κομμάτια πίσω τους
-    if(p.kind==='door') return {...p,x:p.x+sp,y:p.y-(M.H+800),z:0,n};
-    if(p.kind==='back'){if(!(p.mod in bkx))bkx[p.mod]=Object.keys(bkx).length; return {...p,x:M.W+(M.nMod-1-mid)*520+300+bkx[p.mod]*(p.sx+200),y:p.y-(M.H+800),z:0,n}}
-    const A=p.kind==='fill'?480:260;
-    return {...p,x:p.x+d[0]*A+sp,y:p.y+d[1]*A,z:p.z+d[2]*A,n};
-  });
-  // πλάγια προβολή: βάθος προς τα πάνω-δεξιά
+  const used={}, groups=new Map();
+  for(const p of M.P){ if(p.kind==='leg'||p.kind==='metal') continue;
+    const isF=p.grp==='ΚΑΤΑΦΡΑΓΕΣ'&&p.name!=='EXTRA KAPAKI';
+    let grp=isF?'KATAFRAGES':p.name==='EXTRA KAPAKI'?'EXTRA':gOf[p.mod], name=p.name;
+    if(p.name.startsWith('Έξτρα Κ|')) name='K|'; else if(FN[p.name]) name=FN[p.name];
+    const key=grp+'|'+name, cand=nums.filter(x=>x.key===key), n=cand.length?cand[Math.min(cand.length-1,(used[key]=(used[key]||0)+1)-1)].n:'';
+    const gk=isF?'F':String(p.mod); if(!groups.has(gk)) groups.set(gk,{title:isF?'Καταφραγές':tOf[p.mod],ps:[]}); groups.get(gk).ps.push({...p,n}); }
   const P=(x,y,z)=>[x+(-z)*k*c, -y-(-z)*k*s];
-  pts.sort((a,b2)=>(a.z+a.sz)-(b2.z+b2.sz)||(a.x-b2.x)||(a.y-b2.y));
-  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9; const out=[];
-  const poly=(q,fill)=>{q.forEach(([X,Y])=>{minX=Math.min(minX,X);maxX=Math.max(maxX,X);minY=Math.min(minY,Y);maxY=Math.max(maxY,Y)});out.push(`<polygon points="${q.map(v=>v.map(n=>n.toFixed(1)).join(',')).join(' ')}" fill="${fill}" stroke="#1C2328" stroke-width="2"/>`)};
   const FC={body:['#E7D6BF','#D9C2A3','#CDB08C'],door:['#F1E6D6','#E3D3BC','#D6C1A3'],fill:['#D9C2A3','#CDB08C','#BFA07A'],back:['#C9BCA8','#B9AB95','#AA9B84']};
-  const anchors=[];
-  for(const p of pts){const x0=p.x,x1=p.x+p.sx,y0=p.y,y1=p.y+p.sy,z0=p.z,z1=p.z+p.sz, col=FC[p.kind]||FC.body;
-    poly([P(x0,y0,z1),P(x1,y0,z1),P(x1,y1,z1),P(x0,y1,z1)],col[0]);          // μπροστά
-    poly([P(x0,y1,z1),P(x1,y1,z1),P(x1,y1,z0),P(x0,y1,z0)],col[1]);          // πάνω
-    poly([P(x1,y0,z1),P(x1,y0,z0),P(x1,y1,z0),P(x1,y1,z1)],col[2]);          // δεξιά
-    if(p.n==='') continue;
-    // σημείο αναφοράς: κάθετα στενά (πλαϊνά, Κ|) στο πάνω τρίτο της μπροστινής ακμής, οριζόντια στη μέση του μπροστινού τους, πόρτες στη μέση
-    const vert=p.sx<60&&p.sy>p.sx*4, ay=vert?y0+p.sy*.72:y0+p.sy/2;
-    anchors.push({a:P(x0+p.sx/2,ay,z1),n:p.n,vert});}
-  const W0=maxX-minX,H0=maxY-minY, R=Math.max(W0,H0)/46, placed=[];
-  // ετικέτες χωρίς επικάλυψη: δοκιμάζει θέσεις γύρω από το σημείο, με γραμμή οδηγό όταν μετακινηθεί
-  const free=(X,Y)=>placed.every(q=>Math.hypot(q[0]-X,q[1]-Y)>R*2.25);
-  const lab=[];
-  for(const an of anchors){let [X,Y]=an.a,best=null;
-    if(free(X,Y)) best=[X,Y];
-    for(let ring=1;!best&&ring<9;ring++) for(let t=0;t<12&&!best;t++){const ang=(an.vert?(t%2?Math.PI:0):0)+t*Math.PI/6, rr=ring*R*1.6, X2=X+Math.cos(ang)*rr, Y2=Y+Math.sin(ang)*rr; if(free(X2,Y2)) best=[X2,Y2]}
-    if(!best) best=[X,Y]; placed.push(best); lab.push({...an,p:best});}
-  for(const l of lab){const [ax,ay]=l.a,[X,Y]=l.p, moved=Math.hypot(X-ax,Y-ay)>R*.5;
-    if(moved) out.push(`<line x1="${ax.toFixed(1)}" y1="${ay.toFixed(1)}" x2="${X.toFixed(1)}" y2="${Y.toFixed(1)}" stroke="#B0452B" stroke-width="${(R/9).toFixed(1)}"/><circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="${(R/4).toFixed(1)}" fill="#B0452B"/>`);}
-  for(const l of lab){const [X,Y]=l.p; minX=Math.min(minX,X-R);maxX=Math.max(maxX,X+R);minY=Math.min(minY,Y-R);maxY=Math.max(maxY,Y+R);
-    out.push(`<circle cx="${X.toFixed(1)}" cy="${Y.toFixed(1)}" r="${R.toFixed(1)}" fill="#fff" stroke="#B0452B" stroke-width="${(R/7).toFixed(1)}"/><text x="${X.toFixed(1)}" y="${(Y+R*.38).toFixed(1)}" font-size="${(R*1.05).toFixed(1)}" font-family="Arial,sans-serif" font-weight="700" text-anchor="middle" fill="#B0452B">${l.n}</text>`);}
-  const pad=R*1.5;
-  return `<svg viewBox="${(minX-pad).toFixed(0)} ${(minY-pad).toFixed(0)} ${(maxX-minX+2*pad).toFixed(0)} ${(maxY-minY+2*pad).toFixed(0)}" role="img" aria-label="Ανάπτυξη ${esc(r.code)}">${out.join('')}</svg>`;
+  // πόρτες και πλάτες όλων των προϊόντων σε δικό τους πλαίσιο, με τον αριθμό μέσα τους
+  const D0={title:'Πόρτες & πλάτες',ps:[]}; for(const G0 of groups.values()){D0.ps.push(...G0.ps.filter(p=>p.kind==='door'||p.kind==='back'));G0.ps=G0.ps.filter(p=>p.kind!=='door'&&p.kind!=='back')}
+  const order=[...groups.keys()].filter(gk=>groups.get(gk).ps.length).sort((a,b2)=>(a==='F')-(b2==='F')||(+a)-(+b2)).map(gk=>groups.get(gk)); if(D0.ps.length) order.push(D0);
+  const R=Math.max(M.W,M.H)/30, minis=[];
+  const num=(X,Y,n)=>`<circle cx="${X.toFixed(1)}" cy="${Y.toFixed(1)}" r="${R.toFixed(1)}" fill="#fff" stroke="#8A3A22" stroke-width="${(R/7).toFixed(1)}"/><text x="${X.toFixed(1)}" y="${(Y+R*.38).toFixed(1)}" font-size="${(R*1.05).toFixed(1)}" font-family="Arial,sans-serif" font-weight="700" text-anchor="middle" fill="#8A3A22">${n}</text>`;
+  for(const G0 of order){const isD=G0===D0, isF=G0.title==='Καταφραγές';
+    let dx=0; const loc=G0.ps.map(p=>{
+      if(isD){const q={...p,x:dx,z:0};dx+=p.sx+(p.kind==='back'?30:110);return q}
+      const A=isF?(p.dir[1]?300:260):240; return {...p,x:p.x+p.dir[0]*A,y:p.y+p.dir[1]*A,z:p.z+p.dir[2]*A}});
+    loc.sort((a,b2)=>(a.z+a.sz)-(b2.z+b2.sz)||(a.x-b2.x)||(a.y-b2.y));
+    let mnX=1e9,mnY=1e9,mxX=-1e9,mxY=-1e9; const o=[], an=[];
+    const poly=(q,fill)=>{q.forEach(([X,Y])=>{mnX=Math.min(mnX,X);mxX=Math.max(mxX,X);mnY=Math.min(mnY,Y);mxY=Math.max(mxY,Y)});o.push(`<polygon points="${q.map(v=>v.map(t=>t.toFixed(1)).join(',')).join(' ')}" fill="${fill}" stroke="#1C2328" stroke-width="2"/>`)};
+    for(const p of loc){const a0=p.x,a1=p.x+p.sx,b0=p.y,b1=p.y+p.sy,z0=p.z,z1=p.z+p.sz,col=FC[p.kind]||FC.body;
+      poly([P(a0,b0,z1),P(a1,b0,z1),P(a1,b1,z1),P(a0,b1,z1)],col[0]); poly([P(a0,b1,z1),P(a1,b1,z1),P(a1,b1,z0),P(a0,b1,z0)],col[1]); poly([P(a1,b0,z1),P(a1,b0,z0),P(a1,b1,z0),P(a1,b1,z1)],col[2]);
+      if(p.n===''||(!isD&&an.some(q=>q.n===p.n))) continue;
+      const vert=p.sx<60&&p.sy>p.sx*4; an.push({n:p.n,a:P(a0+p.sx/2,isD?b0+p.sy*.5:vert?b0+p.sy*.75:b0+p.sy/2,z1)});}
+    if(isD){ for(const q of an) o.push(num(q.a[0],q.a[1],q.n)); }
+    else { // αριθμοί σε στήλη αριστερά (κομμάτια στο αριστερό μισό) ή δεξιά, ταξινομημένοι κατά ύψος, με κοντές γραμμές
+      const mid=(mnX+mxX)/2, sides=[[an.filter(q=>q.a[0]<mid),mnX-R*2.6,-1],[an.filter(q=>q.a[0]>=mid),mxX+R*2.6,1]]; let nX0=mnX,nX1=mxX;
+      for(const [arr,colX,sg] of sides){ if(!arr.length) continue;
+        arr.sort((a,b2)=>a.a[1]-b2.a[1]); let y=-1e9; for(const q of arr){y=Math.max(q.a[1],y+R*2.35);q.y=y}
+        const ov=arr[arr.length-1].y-(mxY+R); if(ov>0){arr.forEach(q=>q.y-=ov);let u=-1e9;arr.forEach(q=>{q.y=Math.max(q.y,u+R*2.35);u=q.y})}
+        for(const q of arr) o.push(`<polyline points="${q.a[0].toFixed(1)},${q.a[1].toFixed(1)} ${(colX-sg*R*1.6).toFixed(1)},${q.y.toFixed(1)} ${(colX-sg*R).toFixed(1)},${q.y.toFixed(1)}" fill="none" stroke="#8A3A22" stroke-width="${(R/11).toFixed(1)}" stroke-opacity=".7"/><circle cx="${q.a[0].toFixed(1)}" cy="${q.a[1].toFixed(1)}" r="${(R/5).toFixed(1)}" fill="#8A3A22"/>`);
+        for(const q of arr){o.push(num(colX,q.y,q.n));mnY=Math.min(mnY,q.y-R);mxY=Math.max(mxY,q.y+R)}
+        if(sg<0) nX0=colX-R; else nX1=colX+R; }
+      mnX=nX0; mxX=nX1; }
+    o.push(`<text x="${mnX.toFixed(1)}" y="${(mxY+R*2.2).toFixed(1)}" font-size="${(R*1.1).toFixed(1)}" font-family="Arial,sans-serif" font-weight="700" fill="#1C2328">${esc(G0.title)}</text>`); mxY+=R*2.8;
+    minis.push({svg:o.join(''),x:mnX,y:mnY,w:mxX-mnX,h:mxY-mnY});}
+  // πλαίσια σε σειρές ώστε να ταιριάζουν στο χαρτί (περίπου τετράγωνο)
+  const gap=R*2.5, area=minis.reduce((t,m2)=>t+(m2.w+gap)*(m2.h+gap),0), lim=Math.max(...minis.map(m2=>m2.w),Math.sqrt(area*1.15));
+  const out=[]; let cx0=0, cy0=0, rowH=0, W=0;
+  for(const m2 of minis){ if(cx0>0&&cx0+m2.w>lim){cy0+=rowH+gap;cx0=0;rowH=0}
+    out.push(`<g transform="translate(${(cx0-m2.x).toFixed(1)} ${(cy0-m2.y).toFixed(1)})">${m2.svg}</g>`); cx0+=m2.w+gap; rowH=Math.max(rowH,m2.h); W=Math.max(W,cx0-gap)}
+  const Ht=cy0+rowH, pad=R;
+  return `<svg viewBox="${(-pad).toFixed(0)} ${(-pad).toFixed(0)} ${(W+2*pad).toFixed(0)} ${(Ht+2*pad).toFixed(0)}" role="img" aria-label="Ανάπτυξη ${esc(r.code)}">${out.join('')}</svg>`;
 }
 
 // ---------- δεδομένα από το QR (#d=…) ----------
