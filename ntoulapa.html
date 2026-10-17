@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>3D Ντουλάπα · ΤΖΟΥΜΑΝΗ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Προβολέας 3D ανοιχτής ντουλάπας (Πυργαδίκια) — ανοίγει από το QR του φύλλου παραγωγής. Όλα τα στοιχεία είναι μέσα στη διεύθυνση (#d=n1~…). */
+:root{--bg:#EDEFF0;--panel:#FFFFFF;--ink:#1C2328;--muted:#5E6A72;--line:#D3D8DB;--accent:#9A5B24;--accent-soft:#F3E6D8;--wood:#C9A77F;--wood2:#B38E63;--metal:#2B2F33;--wall:#DCDFE1;--bad:#B23A2E;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#151A1D;--panel:#1F2529;--ink:#E6EAEC;--muted:#9AA6AD;--line:#343C42;--accent:#E0A162;--accent-soft:#3A2C1F;--wood:#8C7254;--wood2:#6F5A42;--metal:#0E1012;--wall:#2A3136;--bad:#EC7A6D;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+header{background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding:8px max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px))}
+h1{margin:0;font:600 19px var(--mono)}
+.sub{color:var(--muted);font-size:12.5px}
+.tabs{display:flex;gap:2px;margin-left:auto}
+.tabs button{border:0;background:transparent;padding:7px 13px;border-radius:6px;color:var(--muted);font:600 14px var(--sans);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+main{flex:1;min-height:0;display:flex;flex-direction:column}
+#v3{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none}
+#v3 canvas{display:block;width:100%!important;height:100%!important}
+.bar{background:var(--panel);border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:8px max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px));font-size:13px}
+.bar input[type=range]{width:min(200px,45vw)}
+.bar label{display:inline-flex;gap:6px;align-items:center}
+.bar button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:5px 10px;cursor:pointer}
+#info{font:12.5px var(--mono);color:var(--ink);flex-basis:100%}
+#list{flex:1;overflow:auto;padding:12px max(14px,env(safe-area-inset-right,0px)) 24px max(14px,env(safe-area-inset-left,0px))}
+table{border-collapse:collapse;width:100%;max-width:820px;background:var(--panel);font-size:13.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.g td{color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--accent);padding-top:12px}
+.kt{display:block;color:var(--bad);font:11.5px var(--mono)}
+.err{margin:40px 16px;color:var(--muted);text-align:center}
+[hidden]{display:none!important}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1 id="code">Ντουλάπα</h1><div class="sub" id="dims"></div></div>
+  <nav class="tabs" role="tablist"><button type="button" role="tab" id="t3d" aria-selected="true">3D</button><button type="button" role="tab" id="tls" aria-selected="false">Λίστα κοπής</button></nav>
+</header>
+<main>
+  <div id="p3d" style="flex:1;min-height:0;display:flex;flex-direction:column">
+    <div id="v3"></div>
+    <div class="bar">
+      <label>Ανάπτυξη <input type="range" id="v3ex" min="0" max="100" value="0" aria-label="Ανάπτυξη"></label>
+      <label><input type="checkbox" id="v3doors" checked> Φάτσες</label>
+      <label><input type="checkbox" id="v3backs" checked> Πλάτες</label>
+      <label><input type="checkbox" id="v3fill" checked> Καταφραγές</label>
+      <button type="button" id="v3home">Αρχική θέση</button>
+      <span id="info">Σύρε για περιστροφή · δύο δάχτυλα για zoom · πάτα ένα κομμάτι για διαστάσεις</span>
+    </div>
+  </div>
+  <div id="list" hidden></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const GROUPS={KATAFRAGI:'Καταφραγή',RAFI_PANW:'Ράφι πάνω',PLATES:'Πλάτες',EPENDISI_RAFAKIA:'Επένδυση + ραφάκια',SYRTARIERA:'Συρταριέρα',SYRTARIA:'Κουτιά συρταριών'};
+const RG=10; // ρεγούλες
+const ALLOW=30; // 15 πλακάκι + 15 αέρας
+const FGAP=10, FEDGE=20.5; // φάτσες: 10 ανάμεσά τους, 20.5 από κάθε πλευρά (όπως πριν), όλες ίσες
+function frontW(W,n){return (W-2*FEDGE-FGAP*(n-1))/n}
+function katOf(r){if(!r.kat||r.kat==='ΟΧΙ')return null;return {side:r.kat,w:r.kw||0,oh:r.koh||r.H-ALLOW-RG,ph:r.kph||r.H-ALLOW-RG}}
+function drawersFor(w){return w<250?0:(w<750?1:(w<1500?2:(w<2000?3:4)))}
+function colOf(r){
+  const o=(r.ops||[]).find(o=>o.t==='col'&&o.w>0&&o.d>0); if(!o||!(r.W>0)) return null;
+  const W=r.W, a=o.a==null||o.a===''?5:Math.max(0,+o.a||0), x=+o.x||0;
+  const atL=x<=0, atR=x+o.w>=W; // κολώνα στη γωνία: δεν θέλει πλαϊνό επένδυσης από τη μεριά του τοίχου
+  const X0=atL?0:x-a-18, X1=atR?W:x+o.w+a+18, N0=atL?0:X0-a, N1=atR?W:X1+a, Dn=o.d+2*a+18, sd=o.d+a;
+  return {o,x,w:o.w,d:o.d,a,X0,X1,N0,N1,Dn,sd};
+}
+function build(r){
+  const W=r.W,H=r.H-ALLOW-RG,k=katOf(r);
+  const n=W<1500?2:(W<2000?3:4), P=[];
+  const add=(g,name,q,L,Wd,T,kind)=>{if(q>0)P.push({g,name,q,L:Math.max(L,Wd),W:Math.min(L,Wd),T,kind})};
+  if(k){add('KATAFRAGI','OPSI KATAFRAGIS',1,k.oh,k.w,18,'m18');add('KATAFRAGI','PLAINO KATAFRAGIS',1,k.ph,582,18,'m18');}
+  add('RAFI_PANW','KREMASI RAFIOU PLAINO',1,562,80,18,'m18');
+  add('RAFI_PANW','KREMASI RAFIOU',1,562,80,18,'m18');
+  add('RAFI_PANW','RAFI',1,W-36,562,18,'m18');
+  add('RAFI_PANW','KREMASI RAFIOU',1,W,80,18,'m18');
+  const col=colOf(r);
+  if(!col){
+  add('PLATES','PLATI PANO',1,W,H-2090,18,'m18');
+  add('PLATES','PLATI KATW RAFIWN',1,W/2,2090,18,'m18');
+  add('PLATES','PLATI KATW',1,W/2,2090,18,'m18');
+  } else {
+    // πλάτες: σπάνε γύρω από την επένδυση της κολώνας (X0..X1)
+    const span=(a,b)=>[[a,Math.min(b,col.X0)],[Math.max(a,col.X1),b]].filter(([u,v])=>v-u>0.5);
+    const lft=r.side==='ΑΡΙΣΤΕΡΑ', RW=lft?[0,W/2]:[W/2,W], KW=lft?[W/2,W]:[0,W/2];
+    for(const [u,v] of span(0,W)) add('PLATES','PLATI PANO',1,v-u,H-2090,18,'m18');
+    for(const [u,v] of span(...RW)) add('PLATES','PLATI KATW RAFIWN',1,v-u,2090,18,'m18');
+    for(const [u,v] of span(...KW)) add('PLATES','PLATI KATW',1,v-u,2090,18,'m18');
+    // επένδυση κολώνας: μπροστά (φάρδος+αέρας+36) και πλαϊνά (βάθος+αέρας), κάτω ως 2090 και πάνω ως το σώμα
+    const fwc=Math.min(col.X1,W)-Math.max(col.X0,0), sides=(col.X0>0?1:0)+(col.X1<W?1:0);
+    add('PLATES','PLATI KOLONAS',1,fwc,2090,18,'m18'); add('PLATES','PLATI KOLONAS',1,fwc,H-2090,18,'m18');
+    add('PLATES','PLAINO KOLONAS',sides,col.sd,2090,18,'m18'); add('PLATES','PLAINO KOLONAS',sides,col.sd,H-2090,18,'m18');
+  }
+  add('EPENDISI_RAFAKIA','RAFI',4,500,400,38,'m38');
+  add('EPENDISI_RAFAKIA','KAPAKI',1,W,580,38,'m38');
+  add('SYRTARIERA','EXTRA PLAINO',2,319,580,18,'m18');
+  add('SYRTARIERA','MPAZA',1,W-36,53,18,'m18');
+  add('SYRTARIERA','BASH',1,W-37,560,18,'m18');
+  add('SYRTARIERA','PLAINO ARISTERO',1,241,560,18,'m18');
+  add('SYRTARIERA','PLAINO DEXIO',1,241,560,18,'m18');
+  if(!col){
+  add('SYRTARIERA','STATHERO KATHETO',n-1,223,560,18,'m18');
+  add('SYRTARIERA','LAIMOS',2,W-73,80,18,'m18');
+  const fr=frontW(W,n);
+  add('SYRTARIERA','FATSA',n,256,fr,18,'m18');
+  const inner=W-73-(n-1)*18;
+  const boxes=n===2?[[inner/2-16,2]]:(n===3?[[(inner-9)/3-16,2],[(inner-9)/3+9-16,1]]:[[inner/4-16,4]]);
+  for(const [b,q] of boxes){
+    add('SYRTARIA','PATOS_SYRTARIOY',q,b,480,18,'box');
+    add('SYRTARIA','PLATH_SYRTARIOY',q,b,112,18,'box');
+  }
+  const fronts=[];for(let i=0;i<n;i++)fronts.push({x:FEDGE+i*(fr+FGAP),w:fr});
+  return {n,P,fr,fronts};
+  }
+  // με κολώνα: ίδιες φάτσες σε όλο το φάρδος· όποια φάτσα πέφτει μπροστά στην κολώνα γίνεται σταθερή (χωρίς συρτάρι)
+  const fr=frontW(W,n), inner=W-73-(n-1)*18, fronts=[];
+  const bay=i=>n===3?((inner-9)/3+(i===1?9:0)):inner/n;            // φάρδος κουτιού όπως χωρίς κολώνα
+  const bx0=i=>{let x=36.5;for(let k=0;k<i;k++)x+=bay(k)+18;return x}; // αρχή θέσης i μέσα στη συρταριέρα
+  let N=0, fixed=0; const boxW={};
+  for(let i=0;i<n;i++){
+    const fx=FEDGE+i*(fr+FGAP), a=bx0(i), c=a+bay(i), hit=c>col.N0&&a<col.N1;
+    fronts.push({x:fx,w:fr,fixed:hit});
+    if(hit){fixed++;continue}
+    N++; const bw=clean(bay(i)-16); boxW[bw]=(boxW[bw]||0)+1;
+  }
+  let shortP=0;
+  for(let i=1;i<n;i++){const px=bx0(i)-18; if(px+18>col.N0&&px<col.N1) shortP++}
+  add('SYRTARIERA','STATHERO KATHETO',n-1-shortP,223,560,18,'m18');
+  add('SYRTARIERA','STATHERO KOLONAS',shortP,223,560-col.Dn,18,'m18');
+  add('SYRTARIERA','LAIMOS',1,W-73,80,18,'m18');
+  const lL=col.N0-36.5, lR=W-36.5-col.N1;
+  if(lL>1) add('SYRTARIERA','LAIMOS',1,lL,80,18,'m18');
+  if(lR>1) add('SYRTARIERA','LAIMOS',1,lR,80,18,'m18');
+  add('SYRTARIERA','FATSA',N,256,fr,18,'m18');
+  add('SYRTARIERA','FATSA STATHERI',fixed,256,fr,18,'m18');
+  for(const [bw,q] of Object.entries(boxW)){
+    add('SYRTARIA','PATOS_SYRTARIOY',q,+bw,480,18,'box');
+    add('SYRTARIA','PLATH_SYRTARIOY',q,+bw,112,18,'box');
+  }
+  return {n:N,P,fr,fronts,col};
+}
+
+function clean(v){return Math.round(v*1e6)/1e6}
+function isPer(v){const r=clean(v)*100;return Math.abs(r-Math.round(r))>1e-4}
+function num(v){const r=clean(v);if(!isPer(r))return String(r);return r.toFixed(2)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function valid(r){const k=katOf(r);return r.W>=600&&r.W<=3000&&r.H>2130&&(!k||(k.w>0&&k.oh>0&&k.ph>0))}
+function model3d(r,b){
+  const P=[], W=r.W, Hb=r.H-ALLOW-RG, D=580, y0=RG, k=katOf(r), col=b.col;
+  const add=(name,grp,x,y,z,sx,sy,sz,kind,dir)=>{if(sx>0.5&&sy>0.5&&sz>0.5)P.push({name,grp,x,y,z,sx,sy,sz,kind,dir})};
+  // κομμάτι με εγκοπή Π για την κολώνα: αριστερό, δεξί και μπροστινό κομμάτι (μόνο για τη σχεδίαση)
+  const addU=(name,grp,x,y,z,sx,sy,sz,kind,dir)=>{if(!col||col.N1<=x||col.N0>=x+sx){add(name,grp,x,y,z,sx,sy,sz,kind,dir);return}
+    const a=Math.max(x,col.N0)-x, c=Math.min(x+sx,col.N1)-x, dn=Math.min(col.Dn-(z+D),sz);
+    P.push({name:name+' (φρεζάρισμα Π)',grp,x,y,z,sx,sy,sz,kind,dir,notch:{a,c,dn}})};
+  // ρεγούλες
+  for(const fx of [40,W/2-20,W-80]) add('Ρεγούλα','ΠΟΔΙΑ',fx,0,-D+40,40,RG,D-80,'leg',[0,-1,0]);
+  // πλάτες
+  const lft=r.side==='ΑΡΙΣΤΕΡΑ', split=(a,c)=>col?[[a,Math.min(c,col.X0)],[Math.max(a,col.X1),c]].filter(([u,v])=>v-u>0.5):[[a,c]];
+  for(const [u,v] of split(0,W)) add('PLATI PANO','ΠΛΑΤΕΣ',u,y0+2090,-D,v-u,Hb-2090,18,'back',[0,.15,-1]);
+  for(const [u,v] of split(...(lft?[0,W/2]:[W/2,W]))) add('PLATI KATW RAFIWN','ΠΛΑΤΕΣ',u,y0,-D,v-u,2090,18,'back',[0,0,-1]);
+  for(const [u,v] of split(...(lft?[W/2,W]:[0,W/2]))) add('PLATI KATW','ΠΛΑΤΕΣ',u,y0,-D,v-u,2090,18,'back',[0,0,-1]);
+  if(col){const x0=Math.max(0,col.X0),x1=Math.min(W,col.X1);
+    add('Κολώνα','ΚΟΛΩΝΑ',col.x,0,-D,col.w,r.H-ALLOW,col.d,'col',[0,0,0]);
+    add('PLATI KOLONAS','ΚΟΛΩΝΑ',x0,y0,-D+col.sd,x1-x0,Hb,18,'back',[0,0,.9]);
+    if(col.X0>0) add('PLAINO KOLONAS','ΚΟΛΩΝΑ',x0,y0,-D,18,Hb,col.sd,'back',[-.8,0,.3]);
+    if(col.X1<W) add('PLAINO KOLONAS','ΚΟΛΩΝΑ',x1-18,y0,-D,18,Hb,col.sd,'back',[.8,0,.3]);}
+  // ράφι πάνω με κρεμάστρες
+  add('KREMASI RAFIOU','ΡΑΦΙ ΠΑΝΩ',0,y0+2010,-18,W,80,18,'body',[0,.3,1]);
+  addU('RAFI','ΡΑΦΙ ΠΑΝΩ',18,y0+2072,-D,W-36,18,562,'body',[0,1,.2]);
+  add('KREMASI RAFIOU PLAINO','ΡΑΦΙ ΠΑΝΩ',0,y0+2010,-D,18,80,562,'body',[-1,.5,0]);
+  add('KREMASI RAFIOU','ΡΑΦΙ ΠΑΝΩ',W-18,y0+2010,-D,18,80,562,'body',[1,.5,0]);
+  // ραφάκια 38 και ορθοστάτες
+  const sx0=lft?30:W-30-500, uy0=53+256+38, uy1=2090-80, sp=(uy1-uy0-4*38)/5;
+  for(let i=1;i<=4;i++) add('RAFI 38','ΡΑΦΑΚΙΑ',sx0,y0+uy0+i*sp+(i-1)*38,-D+18,500,38,400,'body',[0,(i-2.5)*.35,.7]);
+  for(const px of (lft?[30,sx0+511,W-30]:[30,sx0-11,W-30])) add('Ορθοστάτης','ΡΑΦΑΚΙΑ',px-11,y0+uy0,-30,22,uy1-uy0,22,'metal',[0,0,1.2]);
+  // συρταριέρα
+  add('EXTRA PLAINO','ΣΥΡΤΑΡΙΕΡΑ',0,y0,-D,18,309,D,'body',[-1,0,0]);
+  add('EXTRA PLAINO','ΣΥΡΤΑΡΙΕΡΑ',W-18,y0,-D,18,309,D,'body',[1,0,0]);
+  add('MPAZA','ΣΥΡΤΑΡΙΕΡΑ',18,y0,-18,W-36,53,18,'fill',[0,-.6,1]);
+  addU('BASH','ΣΥΡΤΑΡΙΕΡΑ',18.5,y0+53,-D,W-37,18,560,'body',[0,-.7,0]);
+  addU('KAPAKI 38','ΣΥΡΤΑΡΙΕΡΑ',0,y0+309,-D,W,38,D,'body',[0,1.1,0]);
+  add('PLAINO ARISTERO','ΣΥΡΤΑΡΙΕΡΑ',18.5,y0+71,-D,18,238,560,'body',[-.7,0,0]);
+  add('PLAINO DEXIO','ΣΥΡΤΑΡΙΕΡΑ',W-36.5,y0+71,-D,18,238,560,'body',[.7,0,0]);
+  add('LAIMOS','ΣΥΡΤΑΡΙΕΡΑ',36.5,y0+229,-36,W-73,80,18,'body',[0,.5,.5]);
+  // χωρίσματα και κουτιά ανά συρτάρι, από τις φάτσες
+  const fr=b.fronts||[];
+  fr.forEach((f,i)=>{
+    add(f.fixed?'FATSA STATHERI':'FATSA','ΣΥΡΤΑΡΙΑ',f.x,y0+57,-18,f.w,252,18,'door',f.fixed?[0,0,.5]:[0,0,1]);
+    if(!f.fixed){const bx=f.x+18, bw=Math.max(60,f.w-36);
+    add('Κουτί συρταριού','ΣΥΡΤΑΡΙΑ',bx,y0+90,-18-490,bw,112,480,'box',[0,0,.75]);}
+    if(i<fr.length-1){const nx=fr[i+1].x, gx=(f.x+f.w+nx)/2-9; add('STATHERO KATHETO','ΣΥΡΤΑΡΙΕΡΑ',gx,y0+71,-D+(col&&gx>col.N0-30&&gx<col.N1+30?col.Dn:20),18,223,col&&gx>col.N0-30&&gx<col.N1+30?560-col.Dn:540,'body',[0,.25,.2])}
+  });
+  // καταφραγή
+  if(k){const kx=k.side==='ΑΡΙΣΤΕΡΑ'?-k.w:W, sg=k.side==='ΑΡΙΣΤΕΡΑ'?-1:1;
+    add('OPSI KATAFRAGIS','ΚΑΤΑΦΡΑΓΗ',kx,y0,-18,k.w,k.oh,18,'fill',[sg,0,.5]);
+    add('PLAINO KATAFRAGIS','ΚΑΤΑΦΡΑΓΗ',k.side==='ΑΡΙΣΤΕΡΑ'?-18:W,y0,-D-2,18,k.ph,582-18,'fill',[sg*.6,0,-.2])}
+  const xmin=k&&k.side==='ΑΡΙΣΤΕΡΑ'?-k.w:0, xmax=k&&k.side==='ΔΕΞΙΑ'?W+k.w:W;
+  return {P,W,H:r.H-ALLOW,D,xmin,xmax};
+}
+
+// --- διαβάζει #d=n1~κωδικός~W~H~ράφια~καταφραγή~kw~koh~kph~κατεργασίες~περιγραφή
+function dec(h){
+  const m=/[#&]d=([^&]*)/.exec(h||''); if(!m) return null;
+  const f=m[1].split('~'); if(f[0]!=='n1') return null;
+  const D=x=>{try{return decodeURIComponent(x||'')}catch(e){return x||''}}, sd=v=>v==='A'?'ΑΡΙΣΤΕΡΑ':v==='D'?'ΔΕΞΙΑ':'ΟΧΙ';
+  const ops=(f[9]||'').split(',').filter(Boolean).map(t=>{
+    if(t[0]==='c'){const [x,w,d,a]=t.slice(1).split('.').map(Number);return {t:'col',x,w,d,a}}
+    if(t[0]==='b'){const [w,h]=t.slice(2).split('.').map(Number);return {t:'beam',side:sd(t[1]),w,h}}
+    return null}).filter(Boolean);
+  return {code:D(f[1]),W:+f[2]||0,H:+f[3]||0,side:sd(f[4])==='ΟΧΙ'?'ΑΡΙΣΤΕΡΑ':sd(f[4]),kat:sd(f[5]),kw:+f[6]||0,koh:+f[7]||0,kph:+f[8]||0,ops,desc:D(f[10])};
+}
+const r=dec(location.hash);
+if(!r||!valid(r)){document.querySelector('main').innerHTML='<p class="err">Ο σύνδεσμος δεν έχει στοιχεία ντουλάπας. Σκάναρε ξανά το QR από το φύλλο παραγωγής.</p>';return}
+const b=build(r);
+$('code').textContent=r.code||'Ντουλάπα';
+$('dims').textContent=[r.desc,r.W+' × '+r.H,b.n+' συρτάρια',r.kat!=='ΟΧΙ'?'καταφραγή '+r.kat.toLowerCase()+' '+r.kw:'',(r.ops||[]).some(o=>o.t==='col')?'κολώνα':''].filter(Boolean).join(' · ');
+document.title=(r.code||'Ντουλάπα')+' · 3D';
+// λίστα κοπής
+(function(){const col=colOf(r);const cut=p=>{if(!col)return'';const k=p.g+'|'+p.name, xs={'RAFI_PANW|RAFI':18,'EPENDISI_RAFAKIA|KAPAKI':0,'SYRTARIERA|BASH':18.5};
+    return k in xs?`<span class="kt">✂ φρεζάρισμα Π ${num(col.N1-col.N0)} × ${num(col.Dn)} πίσω, ${num(col.N0-xs[k])} από αριστερά</span>`:''};
+  let h='<table><thead><tr><th>Κομμάτι</th><th class="n">Ποσ.</th><th class="n">Μήκος</th><th class="n">Πλάτος</th><th class="n">Πάχος</th></tr></thead><tbody>',last='';
+  for(const p of b.P){if(p.g!==last){h+=`<tr class="g"><td colspan="5">${GROUPS[p.g]}</td></tr>`;last=p.g}
+    h+=`<tr><td>${esc(p.name)}${cut(p)}</td><td class="n">${p.q}</td><td class="n">${num(p.L)}</td><td class="n">${num(p.W)}</td><td class="n">${p.T}</td></tr>`}
+  $('list').innerHTML=h+'</tbody></table>'})();
+const tab=t=>{$('p3d').hidden=t!=='3d';$('list').hidden=t==='3d';$('t3d').setAttribute('aria-selected',t==='3d');$('tls').setAttribute('aria-selected',t!=='3d');if(t==='3d'&&window.__rs)window.__rs()};
+$('t3d').onclick=()=>tab('3d'); $('tls').onclick=()=>tab('list');
+if(!window.THREE||!THREE.OrbitControls){$('info').textContent='Δεν φορτώθηκε το 3D (χρειάζεται internet). Η λίστα κοπής δουλεύει.';return}
+const T=THREE, host=$('v3'), M=model3d(r,b), cs=getComputedStyle(document.documentElement), tok=k=>cs.getPropertyValue(k).trim()||'#888';
+const cx=(M.xmin+M.xmax)/2, MW=M.xmax-M.xmin;
+const scene=new T.Scene(); scene.background=new T.Color(tok('--bg'));
+const cam=new T.PerspectiveCamera(35,host.clientWidth/host.clientHeight,10,40000);
+const renderer=new T.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); renderer.setSize(host.clientWidth,host.clientHeight); host.appendChild(renderer.domElement);
+scene.add(new T.HemisphereLight(0xffffff,0x8a8a8a,.85)); const dl=new T.DirectionalLight(0xffffff,.55); dl.position.set(-2000,4000,3000); scene.add(dl);
+const C={body:tok('--wood2'),door:tok('--wood'),fill:tok('--wood2'),back:'#a4937c',metal:tok('--metal'),leg:'#555b60',box:'#d8cbb6',col:'#8f969b'};
+const mats={}, mat=k=>mats[k]||(mats[k]=new T.MeshLambertMaterial({color:new T.Color(C[k]),transparent:k==='col',opacity:k==='col'?.45:1}));
+const edgeM=new T.LineBasicMaterial({color:new T.Color(tok('--ink')),transparent:true,opacity:.55});
+const notchGeo=p=>{const {a,c,dn}=p.notch, sz=p.sz, pts=[[0,0],[p.sx,0],[p.sx,sz],[c,sz],[c,sz-dn],[a,sz-dn],[a,sz],[0,sz]].filter((q,i,A)=>i===0||Math.hypot(q[0]-A[i-1][0],q[1]-A[i-1][1])>0.01);
+  const sh=new T.Shape(); sh.moveTo(pts[0][0],pts[0][1]); pts.slice(1).forEach(q=>sh.lineTo(q[0],q[1]));
+  const g=new T.ExtrudeGeometry(sh,{depth:p.sy,bevelEnabled:false}); g.rotateX(-Math.PI/2); g.translate(-p.sx/2,-p.sy/2,p.sz/2); return g};
+const meshes=[];
+for(const p of M.P){const geo=p.notch?notchGeo(p):new T.BoxGeometry(p.sx,p.sy,p.sz), me=new T.Mesh(geo,mat(p.kind)), home=new T.Vector3(p.x+p.sx/2-cx,p.y+p.sy/2,p.z+p.sz/2);
+  me.position.copy(home); me.userData={p,home}; if(p.kind!=='col') me.add(new T.LineSegments(new T.EdgesGeometry(geo),edgeM)); scene.add(me); meshes.push(me)}
+const wallM=new T.MeshBasicMaterial({color:new T.Color(tok('--wall')),transparent:true,opacity:.55,side:T.DoubleSide});
+const fl=new T.Mesh(new T.PlaneGeometry(MW+800,M.D+1200),wallM); fl.rotation.x=-Math.PI/2; fl.position.set(0,-1,-M.D/2+400); scene.add(fl);
+const wl=new T.Mesh(new T.PlaneGeometry(MW+200,M.H+30),wallM); wl.position.set(0,(M.H+30)/2,-M.D-1); scene.add(wl);
+const ctr=new T.OrbitControls(cam,renderer.domElement); ctr.enableDamping=true;
+const home=()=>{const dist=Math.max(MW,M.H)*2.4*(host.clientWidth<host.clientHeight?1.5:1);cam.position.set(MW*.7+500,M.H*.9,dist);ctr.target.set(0,M.H*.45,-M.D/2);ctr.update()}; home();
+const ray=new T.Raycaster(), mv=new T.Vector2(); let picked=null, down=null; const hint=$('info').textContent;
+renderer.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY]});
+renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>6)return;const rc=renderer.domElement.getBoundingClientRect();
+  mv.set(((e.clientX-rc.left)/rc.width)*2-1,-((e.clientY-rc.top)/rc.height)*2+1); ray.setFromCamera(mv,cam);
+  const hit=ray.intersectObjects(meshes.filter(m=>m.visible&&m.userData.p.kind!=='col'),false)[0];
+  if(picked){picked.material=picked.userData.m0;picked=null}
+  if(hit){picked=hit.object;picked.userData.m0=picked.material;picked.material=new T.MeshLambertMaterial({color:new T.Color(tok('--accent'))});const p=picked.userData.p,d=[p.sx,p.sy,p.sz].map(num).sort((a,c)=>c-a);$('info').textContent=p.grp+' · '+p.name+' · '+d.join(' × ')+' mm'}
+  else $('info').textContent=hint});
+const apply=()=>{const t=+$('v3ex').value/100, sD=$('v3doors').checked, sB=$('v3backs').checked, sF=$('v3fill').checked;
+  for(const me of meshes){const p=me.userData.p, d=p.dir, A=p.kind==='door'?520:p.kind==='box'?380:p.kind==='back'?420:p.kind==='leg'?120:p.kind==='fill'?340:p.kind==='metal'?300:260;
+    me.position.set(me.userData.home.x+d[0]*A*t,me.userData.home.y+d[1]*A*t,me.userData.home.z+d[2]*A*t);
+    me.visible=(p.kind!=='door'||sD)&&(p.kind!=='back'||sB)&&(p.kind!=='fill'||sF)}};
+['v3ex','v3doors','v3backs','v3fill'].forEach(id=>$(id).oninput=apply); $('v3home').onclick=home; apply();
+window.__rs=()=>{cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight)};
+window.addEventListener('resize',window.__rs);
+(function loop(){requestAnimationFrame(loop);ctr.update();renderer.render(scene,cam)})();
+})();
+</script>
+</body>
+</html>
