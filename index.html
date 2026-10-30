@@ -242,7 +242,7 @@ function dec(h){
   const r={code:decodeURIComponent(f[1]||''),W:n(2),H:n(3),D:n(4),lay:f[5]||'',L:side(f[6]),R:side(f[7]),xK:n(8),xKw:n(9),hg:f[10]==='AR'?'AR':'DX',
     extra:!!(fl&1),kor:!(fl&2),k1:!!(fl&4),h5x:!!(fl&8),korH:n(12),air:f[13]===''||f[13]==null?null:+f[13],kw:n(14),dn:n(15),run:n(16),xp,note:'',grp:''};
   const std=(f[20]||'750.800.1150').split('.').map(Number).filter(x=>x>0);
-  SET={gap:76,ntDed:38,maxDoor:650,fillMin:10,fillMax:50,fillStock:n(22)||200,fillSmallBelow:18,fillStockSmall:40,air:n(23),ntW:n(18)||500,eqMin:n(21)||600,mpH:n(19)||96,std:std.length?std:[750,800,1150],hr:[[900,2],[1600,3],[n(24)||2400,4]]};
+  SET={gap:80,ntDed:40,maxDoor:650,fillMin:10,fillMax:50,fillStock:n(22)||200,fillSmallBelow:18,fillStockSmall:40,air:n(23),ntW:n(18)||500,eqMin:n(21)||600,mpH:n(19)||96,std:std.length?std:[750,800,1150],hr:[[900,2],[1600,3],[n(24)||2400,4]]};
   return {r,proj:decodeURIComponent(f[25]||'')};
 }
 const $=id=>document.getElementById(id);
