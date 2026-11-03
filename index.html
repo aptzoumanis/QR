@@ -74,6 +74,7 @@ function airOf(r){return r.air!=null&&r.air!==''&&!isNaN(+r.air)?Math.max(0,+r.a
 function effR(r){const a=airOf(r);return a?{...r,H:r.H-a}:r}
 function sideW(s){return !s||s.t==='-'?0:(s.t==='K'&&s.f>0?s.f:18)}
 function xw(r){return sideW(r.L)-(r.L.t!=='-'?18:0)+sideW(r.R)-(r.R.t!=='-'?18:0)}
+function nHg(r,ni){const a=r.hgN; return Array.isArray(a)&&(a[ni-1]==='AR'||a[ni-1]==='DX')?a[ni-1]:(r.hg==='AR'?'AR':'DX')}
 function kHg(r,ki,nK){return r.k1&&nK===2?(ki===1?'AR':'DX'):(r.hg==='AR'?'AR':'DX')}
 function build(r,g){
   r=effR(r);
@@ -112,14 +113,14 @@ function build(r,g){
   const kor=korDecl||(r.H-Hf); // πραγματικό κενό πάνω· το κομμάτι 200/100 κόβεται επί τόπου
   // κομμάτι Κ-ΟΡ: μήκος = σειρά, πλάτος 100 αν Κ-ΟΡ ≤ 20, αλλιώς 200 (κόβεται επί τόπου)
   const korStock=kor<=20?40:200; // Κ-ΟΡ ≤ 20 → στενό κομμάτι 40 (όπως η κάθετη)
-  let ki=0;
+  let ki=0,ni=0;
   for(const c of lay){
     if(c==='K'){ki++;const g1='KASA-B'+Math.round(kw/10)+(k1?'-1F'+kHg(r,ki,nK):'')+'_'+ki;
       add(g1,'PLAINO ARISTERO',1,Hk,100,18);add(g1,'PLAINO DEXIO',1,Hk,100,18);
       add(g1,'KAPAKI',1,kw-36,100,18);add(g1,'BASH',1,kw-36,100,18);
       if(k1)add(g1,'PORTAKI',1,door,kw-g.ntDed,18); else add(g1,'PORTAKI',2,door,(kw-g.gap)/2,18);
       if(r.extra)add('EXTRA','EXTRA KAPAKI',1,kw,dn,18);
-    } else {const g1='NT-'+Math.round(ntW/10)+(dbl?'':r.hg);
+    } else {ni++;const g1='NT-'+Math.round(ntW/10)+(dbl?'':nHg(r,ni));
       add(g1,'PISINO',2,Math.round((ntH-26)/2),ntW-17,8,'m8');
       add(g1,'KAPAKI',1,ntW-36,dn,18);add(g1,'BASH',1,ntW-36,dn,18);add(g1,'STATHERO ORIZONTIO',1,ntW-36,dn,18);
       add(g1,'PLAINO ARISTERO',1,ntH,dn,18);add(g1,'PLAINO DEXIO',1,ntH,dn,18);
@@ -153,7 +154,7 @@ function model3d(r0,b,g){
   const add=(name,grp,x,y,z,sx,sy,sz,kind,dir,mod)=>P.push({name,grp,x,y,z,sx,sy,sz,kind,dir,mod});
   const tot=total(r,b), off=Math.round((W-tot)/2); let x=off; const nMod=r.lay.length;
   if(r.L.t!=='-'){const d=r.L.t==='P'?D:r.L.w; if(r.L.t==='K'&&r.L.f>18) add('Κ| αριστερά ('+r.L.f+')','ΚΑΤΑΦΡΑΓΕΣ',x,0,-18,r.L.f,H-10,18,'fill',[-1,0,.4],-1); else add(r.L.t==='K'?'Κ| αριστερά':'Πλαϊνό αριστερά','ΚΑΤΑΦΡΑΓΕΣ',x,0,-d,18,H-10,d,'fill',[-1,0,0],-1); x+=sideW(r.L)}
-  const x0=x; let mi=0, k3=0;
+  const x0=x; let mi=0, k3=0, n3=0;
   for(const c of r.lay){
     if(c==='K'){k3++;const w=b.kw, G=`Κάσα ${w}`, m=mi, zb=-18-100;
       add('PLAINO ARISTERO',G,x,0,zb,18,b.Hk,100,'body',[-1,0,0],m); add('PLAINO DEXIO',G,x+w-18,0,zb,18,b.Hk,100,'body',[1,0,0],m);
@@ -163,7 +164,7 @@ function model3d(r0,b,g){
       add('GOLA',G,x+lw+2,100,-14,b.gap-4,b.door,4,'metal',[0,0,.6],m);}
       if(r.extra) add('EXTRA KAPAKI','ΚΑΤΑΦΡΑΓΕΣ',x,b.Hk,-b.dn,w,18,b.dn,'fill',[0,1,0],m);
       x+=w;
-    } else { const w=b.ntW, dn=b.dn, h=b.ntH, G=`NT ${w}`+(c==='D'?' δίφυλλη':' '+r.hg), m=mi, zb=-18-dn, y0=100;
+    } else { const w=b.ntW, dn=b.dn, h=b.ntH, hg3=c==='D'?'':nHg(r,++n3), G=`NT ${w}`+(c==='D'?' δίφυλλη':' '+hg3), m=mi, zb=-18-dn, y0=100;
       add('PLAINO ARISTERO',G,x,y0,zb,18,h,dn,'body',[-1,0,0],m); add('PLAINO DEXIO',G,x+w-18,y0,zb,18,h,dn,'body',[1,0,0],m);
       add('KAPAKI',G,x+18,y0+h-18,zb,w-36,18,dn,'body',[0,1,0],m); add('BASH',G,x+18,y0,zb,w-36,18,dn,'body',[0,-1,0],m);
       add('STATHERO ORIZONTIO',G,x+18,y0+Math.round(h*.55),zb,w-36,18,dn,'body',[0,.35,.6],m);
@@ -171,7 +172,7 @@ function model3d(r0,b,g){
       const bh=Math.round((h-26)/2); add('PISINO',G,x+9,y0+13,zb+11,w-18,bh,8,'back',[0,0,-1],m); add('PISINO',G,x+9,y0+13+bh,zb+11,w-18,bh,8,'back',[0,0,-1],m);
       for(const [lx,lz] of [[71,52],[w-71,52],[71,dn-71],[w-71,dn-71]]) add('Πόδι 100','ΠΟΔΙΑ',x+lx-15,0,-18-lz-15,30,100,30,'leg',[0,-1,0],m);
       if(c==='D'){const lw=(w-b.gap)/2; add('PORTAKI',G,x,y0,-18,lw,h-3,18,'door',[-.25,0,1],m); add('PORTAKI',G,x+w-lw,y0,-18,lw,h-3,18,'door',[.25,0,1],m); add('GOLA',G,x+lw+2,y0,-14,b.gap-4,h-3,4,'metal',[0,0,.6],m)}
-      else {const nd=b.ntDed, dx=r.hg==='DX'; add('PORTAKI',G,dx?x+nd:x,y0,-18,w-nd,h-3,18,'door',[0,0,1],m); add('GOLA',G,dx?x+2:x+w-nd+2,y0,-14,nd-4,h-3,4,'metal',[0,0,.6],m)}
+      else {const nd=b.ntDed, dx=hg3==='DX'; add('PORTAKI',G,dx?x+nd:x,y0,-18,w-nd,h-3,18,'door',[0,0,1],m); add('GOLA',G,dx?x+2:x+w-nd+2,y0,-14,nd-4,h-3,4,'metal',[0,0,.6],m)}
       x+=w; }
     mi++;
   }
@@ -186,7 +187,7 @@ function explodeSVG(r,b,g,nums){
   // Ανάπτυξη ανά προϊόν (κάσα, NT, καταφραγές): κάθε προϊόν σε δικό του πλαίσιο, πόρτες/πλάτες δίπλα,
   // αριθμοί σε μία στήλη δεξιά του πλαισίου, ένας για κάθε γραμμή της λίστας κοπής (χρήστης 2026-10-16)
   const M=model3d(r,b,g), k=.45, c=Math.cos(Math.PI/6), s=Math.sin(Math.PI/6);
-  let ki=0,mi=0; const gOf=[], tOf=[]; for(const ch of r.lay){ if(ch==='K'){ki++;gOf[mi]='KASA-B'+Math.round(b.kw/10)+(b.k1?'-1F'+kHg(r,ki,b.nK):'')+'_'+ki;tOf[mi]='Κάσα '+ki+' · '+b.kw} else {gOf[mi]='NT-'+Math.round(b.ntW/10)+(ch==='D'?'':r.hg);tOf[mi]='NT '+b.ntW+(ch==='D'?' δίφυλλη':' '+r.hg)} mi++ }
+  let ki=0,mi=0,nj=0; const gOf=[], tOf=[]; for(const ch of r.lay){ if(ch==='K'){ki++;gOf[mi]='KASA-B'+Math.round(b.kw/10)+(b.k1?'-1F'+kHg(r,ki,b.nK):'')+'_'+ki;tOf[mi]='Κάσα '+ki+' · '+b.kw} else {nj++;gOf[mi]='NT-'+Math.round(b.ntW/10)+(ch==='D'?'':nHg(r,nj));tOf[mi]='NT '+b.ntW+(ch==='D'?' δίφυλλη':' '+nHg(r,nj))} mi++ }
   const FN={'Κ| αριστερά':'K|','Κ| δεξιά':'K|','Πλαϊνό αριστερά':'PLAINO AR','Πλαϊνό δεξιά':'PLAINO DX','MPAZA':'MPAZA','K-OR':'K-OR'};
   const used={}, groups=new Map();
   for(const p of M.P){ if(p.kind==='leg'||p.kind==='metal') continue;
@@ -245,6 +246,7 @@ function dec(h){
   const xp=(f[17]||'').split(',').filter(Boolean).map(x=>{const a=x.split('*');return {n:decodeURIComponent(a[0]||''),q:+a[1]||1,L:+a[2]||0,W:+a[3]||0,T:+a[4]||18}});
   const r={code:decodeURIComponent(f[1]||''),W:n(2),H:n(3),D:n(4),lay:f[5]||'',L:side(f[6]),R:side(f[7]),xK:n(8),xKw:n(9),hg:f[10]==='AR'?'AR':'DX',
     extra:!!(fl&1),kor:!(fl&2),k1:!!(fl&4),h5x:!!(fl&8),korH:n(12),air:f[13]===''||f[13]==null?null:+f[13],kw:n(14),dn:n(15),run:n(16),xp,note:'',grp:''};
+  if(f[26]) r.hgN=f[26].split('.').map(x=>x==='AR'?'AR':'DX'); // μεντεσέδες ανά NT (2026-11-03)
   const std=(f[20]||'750.800.1150').split('.').map(Number).filter(x=>x>0);
   SET={gap:80,ntDed:40,maxDoor:650,fillMin:10,fillMax:50,fillStock:n(22)||200,fillSmallBelow:18,fillStockSmall:40,air:n(23),ntW:n(18)||500,eqMin:n(21)||600,mpH:n(19)||96,std:std.length?std:[750,800,1150],hr:[[900,2],[1600,3],[n(24)||2400,4]]};
   return {r,proj:decodeURIComponent(f[25]||'')};
