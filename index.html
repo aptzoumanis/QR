@@ -86,15 +86,17 @@ function build(r,g){
   // Αν η κάσα βγαίνει < g.eqMin (600): όπως πριν (NT σταθερή g.ntW, κάσα στα τυποποιημένα).
   let kw=0,snapped=true,ntW=hasN?g.ntW:0,eq=false;
   const k1=!!r.k1&&nK>0;
+  // Κανόνας χρήστη 2026-11-03: με δηλωμένο φάρδος καταφραγής, κάσες/NT παίρνουν ακριβώς το φάρδος που μένει (στρογγύλεμα στο mm, όχι στο 10)· έτσι δεν μπαίνει έξτρα Κ|.
+  const hasF=(r.L.t==='K'&&r.L.f>18)||(r.R.t==='K'&&r.R.f>18), fl=v=>hasF?Math.floor(v):Math.floor(v/10)*10, AV=hasF?r.W-sideW(r.L)-sideW(r.R):r.W-38-xw(r);
   if(k1&&!r.kw){ // κάσες μονόφυλλες (2026-10-12): όλα ίσα — κάσα = NT = floor10((W−38)/(κάσες+NT))
-    const n=nK+nN; kw=r.run?Math.round(r.run/n):Math.floor((r.W-38-xw(r))/n/10)*10; if(hasN) ntW=kw; eq=true;
+    const n=nK+nN; kw=r.run?Math.round(r.run/n):fl(AV/n); if(hasN) ntW=kw; eq=true;
   } else if(r.run){ // ομαδοποίηση: ίδιος ισομοιρασμός πάνω σε κοινή σειρά
     if(hasN){ntW=Math.round(r.run/(2*nK+nN));kw=nK?2*ntW:0}else kw=Math.round(r.run/nK); eq=true;
   } else if(!nK&&nN){ // μόνο ντουλάπα: NT = floor10((W−38)/πλήθος NT)
-    ntW=Math.floor((r.W-38-xw(r))/nN/10)*10; eq=true;
+    ntW=fl(AV/nN); eq=true;
   } else if(r.kw){kw=r.kw; if(hasN) ntW=k1?kw:Math.round(kw/2);}
   else if(nK){
-    const f10=v=>Math.floor(v/10)*10, avail=r.W-38-xw(r);
+    const f10=fl, avail=AV;
     const eN=hasN?f10(avail/(2*nK+nN)):0, eK=hasN?2*eN:f10(avail/nK);
     if(eK>=(g.eqMin||600)){kw=eK;eq=true;if(hasN)ntW=eN;}
     else{const raw=(avail-ntW)/nK;const fit=g.std.filter(s=>s<=raw+6).sort((a,b)=>b-a)[0];
