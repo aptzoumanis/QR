@@ -67,11 +67,13 @@ td.no{color:var(--accent);font-weight:700;width:2.5em}
 </div>
 <script>
 // ΠΑΡΑΓΕΤΑΙ από το artifact-boiler/app.js (extract.js) — μην το διορθώνεις με το χέρι
-const LAYS={KKN:'2 κάσες + NT',NKK:'NT + 2 κάσες',KK:'2 κάσες',K:'1 κάσα',KN:'κάσα + NT',NK:'NT + κάσα',N:'μόνο ντουλάπα (NT)',D:'δίφυλλη ντουλάπα (NT, 2 πόρτες)',NN:'2 ντουλάπες (NT + NT)'};
+const LAYS={KKN:'2 κάσες + NT',NKK:'NT + 2 κάσες',KK:'2 κάσες',K:'1 κάσα',KN:'κάσα + NT',NK:'NT + κάσα',N:'μόνο ντουλάπα (NT)',D:'δίφυλλη ντουλάπα (NT, 2 πόρτες)',NN:'2 ντουλάπες (NT + NT)',KKD:'2 κάσες + NT δίφυλλη',DKK:'NT δίφυλλη + 2 κάσες',KD:'κάσα + NT δίφυλλη',DK:'NT δίφυλλη + κάσα',DD:'2 ντουλάπες δίφυλλες'};
 const K=w=>({t:'K',w}),P={t:'P',w:0};
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function airOf(r){return r.air!=null&&r.air!==''&&!isNaN(+r.air)?Math.max(0,+r.air):G().air}
 function effR(r){const a=airOf(r);return a?{...r,H:r.H-a}:r}
+function sideW(s){return !s||s.t==='-'?0:(s.t==='K'&&s.f>0?s.f:18)}
+function xw(r){return sideW(r.L)-(r.L.t!=='-'?18:0)+sideW(r.R)-(r.R.t!=='-'?18:0)}
 function kHg(r,ki,nK){return r.k1&&nK===2?(ki===1?'AR':'DX'):(r.hg==='AR'?'AR':'DX')}
 function build(r,g){
   r=effR(r);
@@ -85,14 +87,14 @@ function build(r,g){
   let kw=0,snapped=true,ntW=hasN?g.ntW:0,eq=false;
   const k1=!!r.k1&&nK>0;
   if(k1&&!r.kw){ // κάσες μονόφυλλες (2026-10-12): όλα ίσα — κάσα = NT = floor10((W−38)/(κάσες+NT))
-    const n=nK+nN; kw=r.run?Math.round(r.run/n):Math.floor((r.W-38)/n/10)*10; if(hasN) ntW=kw; eq=true;
+    const n=nK+nN; kw=r.run?Math.round(r.run/n):Math.floor((r.W-38-xw(r))/n/10)*10; if(hasN) ntW=kw; eq=true;
   } else if(r.run){ // ομαδοποίηση: ίδιος ισομοιρασμός πάνω σε κοινή σειρά
     if(hasN){ntW=Math.round(r.run/(2*nK+nN));kw=nK?2*ntW:0}else kw=Math.round(r.run/nK); eq=true;
   } else if(!nK&&nN){ // μόνο ντουλάπα: NT = floor10((W−38)/πλήθος NT)
-    ntW=Math.floor((r.W-38)/nN/10)*10; eq=true;
+    ntW=Math.floor((r.W-38-xw(r))/nN/10)*10; eq=true;
   } else if(r.kw){kw=r.kw; if(hasN) ntW=k1?kw:Math.round(kw/2);}
   else if(nK){
-    const f10=v=>Math.floor(v/10)*10, avail=r.W-38;
+    const f10=v=>Math.floor(v/10)*10, avail=r.W-38-xw(r);
     const eN=hasN?f10(avail/(2*nK+nN)):0, eK=hasN?2*eN:f10(avail/nK);
     if(eK>=(g.eqMin||600)){kw=eK;eq=true;if(hasN)ntW=eN;}
     else{const raw=(avail-ntW)/nK;const fit=g.std.filter(s=>s<=raw+6).sort((a,b)=>b-a)[0];
@@ -129,7 +131,7 @@ function build(r,g){
     else if(s.t==='S')add(g2,'PLAINO '+lbl,1,vh,s.w,18);
   }
   // έξτρα Κ| μπροστά: κενό <10 ανοχή · 10–17 κομμάτι 40 (γωνιάστρα) · 18–50 κομμάτι 200 (αλλάζει) · >50 δεν καλύπτεται
-  const wgap=r.W-((r.L.t!=='-'?18:0)+(r.R.t!=='-'?18:0)+run);
+  const wgap=r.W-(sideW(r.L)+sideW(r.R)+run);
   const fill=r.xK>0?r.xK:(wgap>=g.fillMin&&wgap<=g.fillMax?wgap:0);
   const fillStock=!fill?0:(r.xKw||(fill<g.fillSmallBelow?g.fillStockSmall:g.fillStock));
   if(fill)add(g2,'K|',1,vh,fillStock,18);
@@ -139,16 +141,16 @@ function build(r,g){
   for(const x of (r.xp||[])) add('EXTRA',x.n||'EXTRA KOMMATI',x.q||1,x.L,x.W,x.T||18,x.T===8?'m8':'m18');
   const mdr=g.maxDoor||650, kdw=k1?kw-g.ntDed:(kw-g.gap)/2, ndw=dbl?(ntW-g.gap)/2:ntW-g.ntDed;
   const hpd=Math.max(hingesFor(door,g),kw>1200||r.h5x||kdw>mdr?5:0), hpN=Math.max(hingesFor(ntH-3,g),r.h5x||ndw>mdr?5:0), hw={gola:[...(nK?[{n:nK*(k1?1:2),L:door}]:[]),...(hasN?[{n:nN*(dbl?2:1),L:ntH-3}]:[])],hinges:nK*(k1?1:2)*hpd+nN*(dbl?2:1)*hpN,hpd,hpN};
-  return {P,run,kw,Hf,Hk,door,ntH,dn,nK,nN,ntW,maxDoor:mdr,kor,snapped,eq,hw,k1,rest:r.W-38-run,gap:g.gap,ntDed:g.ntDed,wgap,fill,fillStock,korStock};
+  return {P,run,kw,Hf,Hk,door,ntH,dn,nK,nN,ntW,maxDoor:mdr,kor,snapped,eq,hw,k1,rest:r.W-38-xw(r)-run,gap:g.gap,ntDed:g.ntDed,wgap,fill,fillStock,korStock};
 }
 function hingesFor(h,g){for(const [lim,n] of g.hr) if(h<=lim) return n; return g.hr[g.hr.length-1][1]+1}
 function valid(r){return r.W>=400&&r.W<=4000&&r.H>=2000&&r.H<=3000&&r.D>=300&&r.D<=1200&&r.lay}
-function total(r,b){return (r.L.t!=='-'?18:0)+(r.R.t!=='-'?18:0)+b.run}
+function total(r,b){return sideW(r.L)+sideW(r.R)+b.run}
 function model3d(r0,b,g){
   const r=effR(r0), P=[], W=r.W, H=r.H, D=r.D;
   const add=(name,grp,x,y,z,sx,sy,sz,kind,dir,mod)=>P.push({name,grp,x,y,z,sx,sy,sz,kind,dir,mod});
   const tot=total(r,b), off=Math.round((W-tot)/2); let x=off; const nMod=r.lay.length;
-  if(r.L.t!=='-'){const d=r.L.t==='P'?D:r.L.w; add(r.L.t==='K'?'Κ| αριστερά':'Πλαϊνό αριστερά','ΚΑΤΑΦΡΑΓΕΣ',x,0,-d,18,H-10,d,'fill',[-1,0,0],-1); x+=18}
+  if(r.L.t!=='-'){const d=r.L.t==='P'?D:r.L.w; if(r.L.t==='K'&&r.L.f>18) add('Κ| αριστερά ('+r.L.f+')','ΚΑΤΑΦΡΑΓΕΣ',x,0,-18,r.L.f,H-10,18,'fill',[-1,0,.4],-1); else add(r.L.t==='K'?'Κ| αριστερά':'Πλαϊνό αριστερά','ΚΑΤΑΦΡΑΓΕΣ',x,0,-d,18,H-10,d,'fill',[-1,0,0],-1); x+=sideW(r.L)}
   const x0=x; let mi=0, k3=0;
   for(const c of r.lay){
     if(c==='K'){k3++;const w=b.kw, G=`Κάσα ${w}`, m=mi, zb=-18-100;
@@ -172,8 +174,8 @@ function model3d(r0,b,g){
     mi++;
   }
   const xr=x;
-  if(r.R.t!=='-'){const d=r.R.t==='P'?D:r.R.w; add(r.R.t==='K'?'Κ| δεξιά':'Πλαϊνό δεξιά','ΚΑΤΑΦΡΑΓΕΣ',xr,0,-d,18,H-10,d,'fill',[1,0,0],nMod)}
-  if(b.fill) add('Έξτρα Κ| μπροστά ('+b.fill+')','ΚΑΤΑΦΡΑΓΕΣ',r.L.t!=='-'?off-b.fill+18:off-b.fill,0,-18,b.fill,H-10,18,'fill',[-1,0,.4],-1);
+  if(r.R.t!=='-'){const d=r.R.t==='P'?D:r.R.w; if(r.R.t==='K'&&r.R.f>18) add('Κ| δεξιά ('+r.R.f+')','ΚΑΤΑΦΡΑΓΕΣ',xr,0,-18,r.R.f,H-10,18,'fill',[1,0,.4],nMod); else add(r.R.t==='K'?'Κ| δεξιά':'Πλαϊνό δεξιά','ΚΑΤΑΦΡΑΓΕΣ',xr,0,-d,18,H-10,d,'fill',[1,0,0],nMod)}
+  if(b.fill) add('Έξτρα Κ| μπροστά ('+b.fill+')','ΚΑΤΑΦΡΑΓΕΣ',r.L.t!=='-'&&!(r.L.t==='K'&&r.L.f>18)?off-b.fill+18:off-b.fill,0,-18,b.fill,H-10,18,'fill',[-1,0,.4],-1);
   add('MPAZA','ΚΑΤΑΦΡΑΓΕΣ',x0,0,-18,b.run,g.mpH,18,'fill',[0,-1,.8],(nMod-1)/2);
   if(!r.extra&&r.kor!==false&&b.kor>0) add('K-OR','ΚΑΤΑΦΡΑΓΕΣ',x0,b.Hf,-18,b.run,b.kor,18,'fill',[0,1,.8],(nMod-1)/2);
   return {P,W,H,D,nMod};
@@ -236,7 +238,7 @@ function G(){return SET}
 function dec(h){
   const m=/[#&]d=([^&]*)/.exec(h||''); if(!m) return null;
   const f=m[1].split('~'); if(f[0]!=='v1') return null;
-  const n=i=>+f[i]||0, side=s=>{const t=(s||'K200')[0];return {t:t==='-'?'-':t,w:+s.slice(1)||0}};
+  const n=i=>+f[i]||0, side=s=>{s=s||'K200';const t=s[0],m=/^.(\d*)(?:f(\d+))?/.exec(s)||[];const o={t:t==='-'?'-':t,w:+m[1]||0};if(t==='K'&&+m[2]>18)o.f=+m[2];return o};
   const fl=n(11);
   const xp=(f[17]||'').split(',').filter(Boolean).map(x=>{const a=x.split('*');return {n:decodeURIComponent(a[0]||''),q:+a[1]||1,L:+a[2]||0,W:+a[3]||0,T:+a[4]||18}});
   const r={code:decodeURIComponent(f[1]||''),W:n(2),H:n(3),D:n(4),lay:f[5]||'',L:side(f[6]),R:side(f[7]),xK:n(8),xKw:n(9),hg:f[10]==='AR'?'AR':'DX',
