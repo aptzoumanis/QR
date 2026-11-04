@@ -75,6 +75,8 @@ function effR(r){const a=airOf(r);return a?{...r,H:r.H-a}:r}
 function sideW(s){return !s||s.t==='-'?0:(s.t==='K'&&s.f>0?s.f:18)}
 function xw(r){return sideW(r.L)-(r.L.t!=='-'?18:0)+sideW(r.R)-(r.R.t!=='-'?18:0)}
 function nHg(r,ni){const a=r.hgN; return Array.isArray(a)&&(a[ni-1]==='AR'||a[ni-1]==='DX')?a[ni-1]:(r.hg==='AR'?'AR':'DX')}
+const NTBOX={dn:432,H:600,D:372,clr:60};
+function nBox(r,ni){return !/D/.test(r.lay||'')&&Array.isArray(r.boxN)&&!!r.boxN[ni-1]}
 function kHg(r,ki,nK){return r.k1&&nK===2?(ki===1?'AR':'DX'):(r.hg==='AR'?'AR':'DX')}
 function build(r,g){
   r=effR(r);
@@ -120,6 +122,12 @@ function build(r,g){
       add(g1,'KAPAKI',1,kw-36,100,18);add(g1,'BASH',1,kw-36,100,18);
       if(k1)add(g1,'PORTAKI',1,door,kw-g.ntDed,18); else add(g1,'PORTAKI',2,door,(kw-g.gap)/2,18);
       if(r.extra)add('EXTRA','EXTRA KAPAKI',1,kw,dn,18);
+    } else if(nBox(r,ni+1)){ni++;const B=NTBOX, d=B.dn, g1='NT-'+Math.round(ntW/10)+nHg(r,ni)+'-45', gb='NTOYLAPAKI-'+Math.round((ntW-36)/10);
+      add(g1,'PISINO',1,Math.round((ntH-26)/2),ntW-17,8,'m8'); add(g1,'PISINO',1,Math.round(ntH/2-4.5-(18+B.H+13.5)),ntW-17,8,'m8');
+      add(g1,'KAPAKI',1,ntW-36,d,18);add(g1,'BASH',1,ntW-36,d,18);add(g1,'STATHERO ORIZONTIO',2,ntW-36,d,18);
+      add(g1,'PLAINO ARISTERO',1,ntH,d,18);add(g1,'PLAINO DEXIO',1,ntH,d,18);
+      add(g1,'RAFI',1,ntW-36,d-30,18);add(g1,'PORTAKI',1,ntH-3,ntW-g.ntDed,18);
+      add(gb,'PLAINO ARISTERO',1,B.H,B.D,18);add(gb,'PLAINO DEXIO',1,B.H,B.D,18);add(gb,'KAPAKI',1,ntW-72,B.D,18);add(gb,'BASH',1,ntW-72,B.D,18);add(gb,'PISINO',1,ntW-46,B.H-33,8,'m8');
     } else {ni++;const g1='NT-'+Math.round(ntW/10)+(dbl?'':nHg(r,ni));
       add(g1,'PISINO',2,Math.round((ntH-26)/2),ntW-17,8,'m8');
       add(g1,'KAPAKI',1,ntW-36,dn,18);add(g1,'BASH',1,ntW-36,dn,18);add(g1,'STATHERO ORIZONTIO',1,ntW-36,dn,18);
@@ -164,12 +172,24 @@ function model3d(r0,b,g){
       add('GOLA',G,x+lw+2,100,-14,b.gap-4,b.door,4,'metal',[0,0,.6],m);}
       if(r.extra) add('EXTRA KAPAKI','ΚΑΤΑΦΡΑΓΕΣ',x,b.Hk,-b.dn,w,18,b.dn,'fill',[0,1,0],m);
       x+=w;
-    } else { const w=b.ntW, dn=b.dn, h=b.ntH, hg3=c==='D'?'':nHg(r,++n3), G=`NT ${w}`+(c==='D'?' δίφυλλη':' '+hg3), m=mi, zb=-18-dn, y0=100;
+    } else { const hg3=c==='D'?'':nHg(r,++n3), bx=c!=='D'&&nBox(r,n3), B=NTBOX, w=b.ntW, dn=bx?B.dn:b.dn, h=b.ntH, G=`NT ${w}`+(c==='D'?' δίφυλλη':' '+hg3)+(bx?' · ντουλαπάκι':''), m=mi, zb=-18-dn, y0=100;
       add('PLAINO ARISTERO',G,x,y0,zb,18,h,dn,'body',[-1,0,0],m); add('PLAINO DEXIO',G,x+w-18,y0,zb,18,h,dn,'body',[1,0,0],m);
       add('KAPAKI',G,x+18,y0+h-18,zb,w-36,18,dn,'body',[0,1,0],m); add('BASH',G,x+18,y0,zb,w-36,18,dn,'body',[0,-1,0],m);
-      add('STATHERO ORIZONTIO',G,x+18,y0+Math.round(h*.55),zb,w-36,18,dn,'body',[0,.35,.6],m);
-      add('RAFI',G,x+18,y0+Math.round(h*.3),zb+30,w-36,18,dn-30,'body',[0,.15,.8],m); add('RAFI',G,x+18,y0+Math.round(h*.8),zb+30,w-36,18,dn-30,'body',[0,.6,.8],m);
-      const bh=Math.round((h-26)/2); add('PISINO',G,x+9,y0+13,zb+11,w-18,bh,8,'back',[0,0,-1],m); add('PISINO',G,x+9,y0+13+bh,zb+11,w-18,bh,8,'back',[0,0,-1],m);
+      // ύψη όπως στα TLF (2026-11-04): σταθερό στη μέση, ράφια στις τρύπες ≈ 0.248·h και 0.743·h
+      add('STATHERO ORIZONTIO',G,x+18,y0+Math.round(h/2)-9,zb,w-36,18,dn,'body',[0,.35,.6],m);
+      const bh=Math.round((h-26)/2);
+      if(bx){const bz=zb, bt=y0+18+B.H, lb=Math.round(h/2-4.5-(18+B.H+13.5));
+        add('STATHERO ORIZONTIO',G,x+18,bt,zb,w-36,18,dn,'body',[0,.25,.9],m);
+        add('RAFI',G,x+18,y0+Math.round(h*.743),zb+30,w-36,18,dn-30,'body',[0,.6,.8],m);
+        add('PISINO',G,x+9,y0+13+bh,zb+11,w-18,bh,8,'back',[0,0,-1],m); add('PISINO',G,x+9,bt+13.5,zb+11,w-18,lb,8,'back',[0,0,-1],m);
+        const gb='NTOYLAPAKI-'+Math.round((w-36)/10), T='Ντουλαπάκι '+(w-36);
+        const ab=(name,X0,Y0,Z0,sx,sy,sz,kind,dir)=>P.push({name,grp:T,cg:gb,x:X0,y:Y0,z:Z0,sx,sy,sz,kind,dir,mod:m});
+        ab('PLAINO ARISTERO',x+18,y0+18,bz,18,B.H,B.D,'box',[-.5,0,1.4]); ab('PLAINO DEXIO',x+w-36,y0+18,bz,18,B.H,B.D,'box',[.5,0,1.4]);
+        ab('KAPAKI',x+36,y0+B.H,bz,w-72,18,B.D,'box',[0,.4,1.4]); ab('BASH',x+36,y0+18,bz,w-72,18,B.D,'box',[0,-.2,1.4]);
+        ab('PISINO',x+23,y0+34.5,bz+11,w-46,B.H-33,8,'back',[0,0,.6]);
+      } else {
+      add('RAFI',G,x+18,y0+Math.round(h*.248),zb+30,w-36,18,dn-30,'body',[0,.15,.8],m); add('RAFI',G,x+18,y0+Math.round(h*.743),zb+30,w-36,18,dn-30,'body',[0,.6,.8],m);
+      add('PISINO',G,x+9,y0+13,zb+11,w-18,bh,8,'back',[0,0,-1],m); add('PISINO',G,x+9,y0+13+bh,zb+11,w-18,bh,8,'back',[0,0,-1],m); }
       for(const [lx,lz] of [[71,52],[w-71,52],[71,dn-71],[w-71,dn-71]]) add('Πόδι 100','ΠΟΔΙΑ',x+lx-15,0,-18-lz-15,30,100,30,'leg',[0,-1,0],m);
       if(c==='D'){const lw=(w-b.gap)/2; add('PORTAKI',G,x,y0,-18,lw,h-3,18,'door',[-.25,0,1],m); add('PORTAKI',G,x+w-lw,y0,-18,lw,h-3,18,'door',[.25,0,1],m); add('GOLA',G,x+lw+2,y0,-14,b.gap-4,h-3,4,'metal',[0,0,.6],m)}
       else {const nd=b.ntDed, dx=hg3==='DX'; add('PORTAKI',G,dx?x+nd:x,y0,-18,w-nd,h-3,18,'door',[0,0,1],m); add('GOLA',G,dx?x+2:x+w-nd+2,y0,-14,nd-4,h-3,4,'metal',[0,0,.6],m)}
@@ -187,17 +207,17 @@ function explodeSVG(r,b,g,nums){
   // Ανάπτυξη ανά προϊόν (κάσα, NT, καταφραγές): κάθε προϊόν σε δικό του πλαίσιο, πόρτες/πλάτες δίπλα,
   // αριθμοί σε μία στήλη δεξιά του πλαισίου, ένας για κάθε γραμμή της λίστας κοπής (χρήστης 2026-10-16)
   const M=model3d(r,b,g), k=.45, c=Math.cos(Math.PI/6), s=Math.sin(Math.PI/6);
-  let ki=0,mi=0,nj=0; const gOf=[], tOf=[]; for(const ch of r.lay){ if(ch==='K'){ki++;gOf[mi]='KASA-B'+Math.round(b.kw/10)+(b.k1?'-1F'+kHg(r,ki,b.nK):'')+'_'+ki;tOf[mi]='Κάσα '+ki+' · '+b.kw} else {nj++;gOf[mi]='NT-'+Math.round(b.ntW/10)+(ch==='D'?'':nHg(r,nj));tOf[mi]='NT '+b.ntW+(ch==='D'?' δίφυλλη':' '+nHg(r,nj))} mi++ }
+  let ki=0,mi=0,nj=0; const gOf=[], tOf=[]; for(const ch of r.lay){ if(ch==='K'){ki++;gOf[mi]='KASA-B'+Math.round(b.kw/10)+(b.k1?'-1F'+kHg(r,ki,b.nK):'')+'_'+ki;tOf[mi]='Κάσα '+ki+' · '+b.kw} else {nj++;gOf[mi]='NT-'+Math.round(b.ntW/10)+(ch==='D'?'':nHg(r,nj))+(ch!=='D'&&nBox(r,nj)?'-45':'');tOf[mi]='NT '+b.ntW+(ch==='D'?' δίφυλλη':' '+nHg(r,nj))} mi++ }
   const FN={'Κ| αριστερά':'K|','Κ| δεξιά':'K|','Πλαϊνό αριστερά':'PLAINO AR','Πλαϊνό δεξιά':'PLAINO DX','MPAZA':'MPAZA','K-OR':'K-OR'};
   const used={}, groups=new Map();
   for(const p of M.P){ if(p.kind==='leg'||p.kind==='metal') continue;
     const isF=p.grp==='ΚΑΤΑΦΡΑΓΕΣ'&&p.name!=='EXTRA KAPAKI';
-    let grp=isF?'KATAFRAGES':p.name==='EXTRA KAPAKI'?'EXTRA':gOf[p.mod], name=p.name;
+    let grp=isF?'KATAFRAGES':p.name==='EXTRA KAPAKI'?'EXTRA':p.cg||gOf[p.mod], name=p.name;
     if(p.name.startsWith('Έξτρα Κ|')) name='K|'; else if(FN[p.name]) name=FN[p.name];
     const key=grp+'|'+name, cand=nums.filter(x=>x.key===key), n=cand.length?cand[Math.min(cand.length-1,(used[key]=(used[key]||0)+1)-1)].n:'';
     const gk=isF?'F':String(p.mod); if(!groups.has(gk)) groups.set(gk,{title:isF?'Καταφραγές':tOf[p.mod],ps:[]}); groups.get(gk).ps.push({...p,n}); }
   const P=(x,y,z)=>[x+(-z)*k*c, -y-(-z)*k*s];
-  const FC={body:['#E7D6BF','#D9C2A3','#CDB08C'],door:['#F1E6D6','#E3D3BC','#D6C1A3'],fill:['#D9C2A3','#CDB08C','#BFA07A'],back:['#C9BCA8','#B9AB95','#AA9B84']};
+  const FC={box:['#F2C48D','#E8A85A','#D99541'],body:['#E7D6BF','#D9C2A3','#CDB08C'],door:['#F1E6D6','#E3D3BC','#D6C1A3'],fill:['#D9C2A3','#CDB08C','#BFA07A'],back:['#C9BCA8','#B9AB95','#AA9B84']};
   // πόρτες και πλάτες όλων των προϊόντων σε δικό τους πλαίσιο, με τον αριθμό μέσα τους
   const D0={title:'Πόρτες & πλάτες',ps:[]}; for(const G0 of groups.values()){D0.ps.push(...G0.ps.filter(p=>p.kind==='door'||p.kind==='back'));G0.ps=G0.ps.filter(p=>p.kind!=='door'&&p.kind!=='back')}
   const order=[...groups.keys()].filter(gk=>groups.get(gk).ps.length).sort((a,b2)=>(a==='F')-(b2==='F')||(+a)-(+b2)).map(gk=>groups.get(gk)); if(D0.ps.length) order.push(D0);
@@ -247,6 +267,7 @@ function dec(h){
   const r={code:decodeURIComponent(f[1]||''),W:n(2),H:n(3),D:n(4),lay:f[5]||'',L:side(f[6]),R:side(f[7]),xK:n(8),xKw:n(9),hg:f[10]==='AR'?'AR':'DX',
     extra:!!(fl&1),kor:!(fl&2),k1:!!(fl&4),h5x:!!(fl&8),korH:n(12),air:f[13]===''||f[13]==null?null:+f[13],kw:n(14),dn:n(15),run:n(16),xp,note:'',grp:''};
   if(f[26]) r.hgN=f[26].split('.').map(x=>x==='AR'?'AR':'DX'); // μεντεσέδες ανά NT (2026-11-03)
+  if(f[27]) r.boxN=f[27].split('.').map(x=>x==='1'?1:0); // ντουλαπάκι ανά NT (2026-11-04)
   const std=(f[20]||'750.800.1150').split('.').map(Number).filter(x=>x>0);
   SET={gap:80,ntDed:40,maxDoor:650,fillMin:10,fillMax:50,fillStock:n(22)||200,fillSmallBelow:18,fillStockSmall:40,air:n(23),ntW:n(18)||500,eqMin:n(21)||600,mpH:n(19)||96,std:std.length?std:[750,800,1150],hr:[[900,2],[1600,3],[n(24)||2400,4]]};
   return {r,proj:decodeURIComponent(f[25]||'')};
@@ -284,7 +305,7 @@ function view(M){
   const cam=new T.PerspectiveCamera(35,host.clientWidth/Math.max(1,host.clientHeight),10,40000);
   const ren=new T.WebGLRenderer({antialias:true}); ren.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); ren.setSize(host.clientWidth,host.clientHeight); host.appendChild(ren.domElement);
   scene.add(new T.HemisphereLight(0xffffff,0x8a8a8a,.85)); const dl=new T.DirectionalLight(0xffffff,.55); dl.position.set(-2000,4000,3000); scene.add(dl);
-  const C={body:tok('--wood2'),door:tok('--wood'),fill:tok('--wood2'),back:'#9d8f7c',metal:tok('--metal'),leg:'#555b60'}, mats={};
+  const C={box:'#e8a85a',body:tok('--wood2'),door:tok('--wood'),fill:tok('--wood2'),back:'#9d8f7c',metal:tok('--metal'),leg:'#555b60'}, mats={};
   const mat=k=>mats[k]||(mats[k]=new T.MeshLambertMaterial({color:new T.Color(C[k])}));
   const edgeM=new T.LineBasicMaterial({color:new T.Color(tok('--ink')),transparent:true,opacity:.55}), meshes=[];
   for(const p of M.P){const geo=new T.BoxGeometry(p.sx,p.sy,p.sz), me=new T.Mesh(geo,mat(p.kind)), home=new T.Vector3(p.x+p.sx/2-M.W/2,p.y+p.sy/2,p.z+p.sz/2);
@@ -302,7 +323,7 @@ function view(M){
     if(hit){picked=hit.object;picked.userData.m0=picked.material;picked.material=new T.MeshLambertMaterial({color:new T.Color(tok('--accent'))});const p=picked.userData.p,d=[p.sx,p.sy,p.sz].map(Math.round).sort((a,c)=>c-a);
       $('info').textContent=p.grp+' · '+p.name+' · '+d.join(' × ')+' mm'} else $('info').textContent='Σύρε για περιστροφή · δύο δάχτυλα για zoom · πάτα κομμάτι για διαστάσεις'});
   const apply=()=>{const t=+$('exr').value/100, sd=$('doors').checked, sf=$('fills').checked, mid=(M.nMod-1)/2;
-    for(const me of meshes){const p=me.userData.p,d=p.dir,A=p.kind==='door'?520:p.kind==='back'?380:p.kind==='leg'?140:p.kind==='fill'?320:p.kind==='metal'?300:220;
+    for(const me of meshes){const p=me.userData.p,d=p.dir,A=p.kind==='door'?520:p.kind==='back'?380:p.kind==='leg'?140:p.kind==='fill'?320:p.kind==='metal'?300:p.kind==='box'?260:220;
       me.position.set(me.userData.home.x+(d[0]*A+(p.mod-mid)*420)*t,me.userData.home.y+d[1]*A*t,me.userData.home.z+d[2]*A*t);
       me.visible=(p.kind!=='door'&&p.kind!=='metal'||sd)&&(p.kind!=='fill'||sf)}};
   ['exr','doors','fills'].forEach(id=>$(id).addEventListener('input',apply)); $('home').addEventListener('click',home); apply();
