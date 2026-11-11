@@ -145,7 +145,8 @@ function build(r,g){
   const wgap=r.W-(sideW(r.L)+sideW(r.R)+run);
   const fill=r.xK>0?r.xK:(wgap>=g.fillMin&&wgap<=g.fillMax?wgap:0);
   const fillStock=!fill?0:(r.xKw||(fill<g.fillSmallBelow?g.fillStockSmall:g.fillStock));
-  if(fill)add(g2,'K|',1,vh,fillStock,18);
+  // Κανόνας χρήστη 2026-11-11: η έξτρα Κ| μπροστά ΔΕΝ μπαίνει στη λίστα κοπής — βγαίνει από την Κ| 200 της πλευράς. Φαίνεται μόνο στο σχέδιο.
+  // Αν δεν υπάρχει Κ| σε καμία πλευρά, βγαίνει προειδοποίηση (warnings) για να μπει καταφραγή.
   add(g2,'MPAZA',1,run,g.mpH,18);
   if(korOn)add(g2,'K-OR',1,run,korStock,18);
   // έξτρα κομμάτια του δωματίου (χρήστης 2026-10-16): μπαίνουν στη λίστα κοπής, χωρίς CNC
